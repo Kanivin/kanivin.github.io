@@ -1,0 +1,61 @@
+<li class="has-children">
+                                                            <a href="#"><span>Services</span></a>
+                                                            <!-- mega menu -->
+                                                            <ul class="megamenu megamenu--mega">
+                                                                
+                                                                <li>
+                                                                    <h2 class="page-list-title">Cloud & engineering</h2>
+                                                                    <ul>
+                                                                        <li><a href="services-cloud-advisory.html"><span>Cloud advisory</span></a></li>
+                                                                        <li><a href="services-cloud-Platform.html"><span>Platform engineering</span></a></li>
+                                                                        <li><a href="services-cloud-native.html"><span>Cloud native development</span></a></li>
+                                                                        <li><a href="services-cloud-data.html"><span>Cloud data & AI</span></a></li>
+                                                                        <li><a href="services-cloud-migration.html"><span>Cloud migration & app modernization</span></a></li>
+                                                                       
+                                                                    </ul>
+                                                                </li>
+                                                                <li>
+                                                                    <h2 class="page-list-title">Artificial intelligence</h2>
+                                                                    <ul>
+                                                                        <li><a href="services-ai-strategy.html"><span>AI strategy</span></a></li>
+                                                                        <li><a href="services-ai-products.html"><span>AI products</span></a></li>
+                                                                        <li><a href="services-ai-models.html"><span>AI models</span></a></li>
+                                                                        <li><a href="services-ai-everywhere.html"><span>AI everywhere</span></a></li>                                                                     
+                                                                    </ul>
+                                                                </li>
+                                                                <li>
+                                                                    <h2 class="page-list-title">Data</h2>
+                                                                    <ul>
+                                                                        <li><a href="services-data-strategy.html"><span>Data strategy</span></a></li>
+                                                                        <li><a href="services-data-architecture.html"><span>Data architecture</span></a></li>
+                                                                       <li><a href="services-data-analytics.html"><span>Data analytics</span></a></li>                                                                     
+                                                                    </ul>
+                                                                </li>
+                                                                <li>
+                                                                    <h2 class="page-list-title">Innovation</h2>
+                                                                    <ul>
+                                                                        <li><a href="services-innovation-strategy.html"><span>Innovation strategy</span></a></li>
+                                                                        <li><a href="services-innovation-product.html"><span>Product management</span></a></li>
+                                                                        <!-- <li><a href="services-innovation-incubation.html"><span>Product & service incubation</span></a></li> -->
+                                                                        <!-- <li><a href="services-innovation-ideation.html"><span>Product & service ideation</span></a></li> -->
+                                                                    </ul>
+                                                                </li>
+                                                                <li>
+                                                                    <h2 class="page-list-title">Management consulting</h2>
+                                                                    <ul>
+                                                                        <li><a href="services-management-strategic.html"><span>Strategic alignment</span></a></li>
+                                                                        <li><a href="services-management-transformation.html"><span>Business transformation</span></a></li>
+                                                                        <li><a href="services-management-operational.html"><span>Operational excellence</span></a></li>
+                                                       
+                                                                    </ul>
+                                                                </li>
+                                                                <li>
+                                                                    <h2 class="page-list-title">Ecommerce</h2>
+                                                                    <ul>
+                                                                        <li><a href="services-ecommerce-strategy.html"><span>Ecommerce strategy</span></a></li>
+                                                                        <li><a href="services-ecommerce-ondc.html"><span>Ecommerce ONDC</span></a></li>
+                                                                        <!-- <li><a href="services-ecommerce-optimization.html"><span>Ecommerce optimization</span></a></li>  -->                                                                
+                                                                    </ul>
+                                                                </li>
+                                                            </ul>
+                                                        </li>
