@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Overtime & Double Time Rules</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+<div class="max-w-7xl mx-auto space-y-8">
+
+  <!-- HEADER -->
+  <div class="flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-gray-800">Overtime Rules</h1>
+  </div>
+
+  <!-- RULE BUILDER -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Double Time -->
+    <div class="bg-white p-6 rounded-xl shadow space-y-4">
+      <h2 class="font-semibold text-lg">Overtime - Double Time</h2>
+      <div>
+        <label>Multiplier</label>
+        <input type="number" value="2" step="0.1" id="dt-multiplier" class="w-24 border px-2 py-1">
+      </div>
+      <div>
+        <input type="checkbox" id="dt-daily-check" checked> Daily After
+        <input type="number" value="12" id="dt-daily" class="w-24 border px-2 py-1"> hours
+      </div>
+      <div>
+        <input type="checkbox" id="dt-weekly-check"> Weekly After
+        <input type="number" value="40" id="dt-weekly" class="w-24 border px-2 py-1"> hours
+      </div>
+      <div>
+        <input type="checkbox" id="dt-consecutive-check"> Consecutive Day
+        <select id="dt-consecutive"><option value="7">7th</option><option value="6">6th</option></select>
+        After <input type="number" value="8" id="dt-consecutive-hours" class="w-24 border px-2 py-1"> hours
+      </div>
+      <div>
+        All hours on:
+        <label><input type="checkbox" id="dt-sat" checked> Sat</label>
+        <label><input type="checkbox" id="dt-sun" checked> Sun</label>
+        <label><input type="checkbox" id="dt-holiday"> Holiday</label>
+      </div>
+    </div>
+
+    <!-- Time & Half -->
+    <div class="bg-white p-6 rounded-xl shadow space-y-4">
+      <h2 class="font-semibold text-lg">Overtime - Time & Half</h2>
+      <div>
+        <label>Multiplier</label>
+        <input type="number" value="1.5" step="0.1" id="th-multiplier" class="w-24 border px-2 py-1">
+      </div>
+      <div>
+        <input type="checkbox" id="th-daily-check" checked> Daily After
+        <input type="number" value="8" id="th-daily" class="w-24 border px-2 py-1"> hours
+      </div>
+      <div>
+        <input type="checkbox" id="th-weekly-check"> Weekly After
+        <input type="number" value="40" id="th-weekly" class="w-24 border px-2 py-1"> hours
+      </div>
+      <div>
+        <input type="checkbox" id="th-consecutive-check"> Consecutive Day
+        <select id="th-consecutive"><option value="6">6th</option><option value="7">7th</option></select>
+        After <input type="number" value="8" id="th-consecutive-hours" class="w-24 border px-2 py-1"> hours
+      </div>
+      <div>
+        All hours on:
+        <label><input type="checkbox" id="th-sat" checked> Sat</label>
+        <label><input type="checkbox" id="th-sun" checked> Sun</label>
+        <label><input type="checkbox" id="th-holiday"> Holiday</label>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Simulation -->
+  <div class="bg-white p-6 rounded-xl shadow">
+    <h2 class="font-semibold text-lg mb-4">Simulation / Preview</h2>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div>
+        <label>Employee Rate (base/hour)</label>
+        <input type="number" value="20" step="0.01" id="employee-rate" class="w-full border px-2 py-1 mt-1">
+      </div>
+      <div class="col-span-3">
+        <label>Enter Hours per Day (Mon-Sun)</label>
+        <div class="flex space-x-2 mt-1">
+          <input type="number" value="8" class="w-14 border text-center day-hours" data-day="Mon">
+          <input type="number" value="8" class="w-14 border text-center day-hours" data-day="Tue">
+          <input type="number" value="8" class="w-14 border text-center day-hours" data-day="Wed">
+          <input type="number" value="8" class="w-14 border text-center day-hours" data-day="Thu">
+          <input type="number" value="8" class="w-14 border text-center day-hours" data-day="Fri">
+          <input type="number" value="4" class="w-14 border text-center day-hours" data-day="Sat">
+          <input type="number" value="0" class="w-14 border text-center day-hours" data-day="Sun">
+        </div>
+      </div>
+    </div>
+
+    <div class="flex space-x-4 mb-6">
+      <button onclick="runSimulation()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Run Simulation</button>
+      <button onclick="clearSimulation()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Clear</button>
+    </div>
+
+    <table class="w-full border text-sm" id="results-table">
+      <thead class="bg-gray-100">
+        <tr><th>Day</th><th>Hours</th><th>Base Pay</th><th>Overtime Pay</th></tr>
+      </thead>
+      <tbody></tbody>
+      <tfoot class="bg-gray-50 font-semibold">
+        <tr>
+          <td colspan="4" class="border px-2 py-2 text-right" id="totals">
+            Total Hours: 0 | Base Pay: $0.00 | Overtime Pay: $0.00 | Grand Total: $0.00
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<script>
+function runSimulation() {
+  const rate = parseFloat(document.getElementById('employee-rate').value) || 0;
+  const hoursInputs = document.querySelectorAll('.day-hours');
+  const tbody = document.querySelector('#results-table tbody');
+  tbody.innerHTML = '';
+
+  // Load rules
+  const rules = [
+    {
+      name: 'Double Time',
+      multiplier: parseFloat(document.getElementById('dt-multiplier').value),
+      dailyCheck: document.getElementById('dt-daily-check').checked,
+      daily: parseFloat(document.getElementById('dt-daily').value),
+      weeklyCheck: document.getElementById('dt-weekly-check').checked,
+      weekly: parseFloat(document.getElementById('dt-weekly').value),
+      consecutiveCheck: document.getElementById('dt-consecutive-check').checked,
+      consecutiveDay: parseInt(document.getElementById('dt-consecutive').value),
+      consecutiveHours: parseFloat(document.getElementById('dt-consecutive-hours').value),
+      sat: document.getElementById('dt-sat').checked,
+      sun: document.getElementById('dt-sun').checked,
+      holiday: document.getElementById('dt-holiday').checked
+    },
+    {
+      name: 'Time & Half',
+      multiplier: parseFloat(document.getElementById('th-multiplier').value),
+      dailyCheck: document.getElementById('th-daily-check').checked,
+      daily: parseFloat(document.getElementById('th-daily').value),
+      weeklyCheck: document.getElementById('th-weekly-check').checked,
+      weekly: parseFloat(document.getElementById('th-weekly').value),
+      consecutiveCheck: document.getElementById('th-consecutive-check').checked,
+      consecutiveDay: parseInt(document.getElementById('th-consecutive').value),
+      consecutiveHours: parseFloat(document.getElementById('th-consecutive-hours').value),
+      sat: document.getElementById('th-sat').checked,
+      sun: document.getElementById('th-sun').checked,
+      holiday: document.getElementById('th-holiday').checked
+    }
+  ];
+
+  let totalHours = 0, totalBase = 0, totalOT = 0, weeklyHours = 0, consecutive = 0;
+
+  hoursInputs.forEach(input => {
+    const hours = parseFloat(input.value) || 0;
+    let dayOT = 0;
+    const day = input.dataset.day;
+
+    consecutive = hours > 0 ? consecutive + 1 : 0;
+    weeklyHours += hours;
+
+    // Compute OT for all rules
+    const otCandidates = [];
+
+    rules.forEach(rule => {
+      if(hours === 0) return;
+
+      let applyAll = (day==='Sat' && rule.sat) || (day==='Sun' && rule.sun);
+      let ot = 0;
+
+      // All hours on
+      if(applyAll) {
+        ot = hours * rate * (rule.multiplier - 1);
+      }
+      else {
+        // Daily
+        if(rule.dailyCheck && hours > rule.daily) ot += (hours - rule.daily) * rate * (rule.multiplier -1);
+        // Weekly
+        if(rule.weeklyCheck && weeklyHours > rule.weekly) {
+          let otHours = Math.min(weeklyHours - rule.weekly, hours);
+          if(otHours>0) ot += otHours * rate * (rule.multiplier -1);
+        }
+        // Consecutive
+        if(rule.consecutiveCheck && consecutive === rule.consecutiveDay && hours > rule.consecutiveHours) {
+          ot += (hours - rule.consecutiveHours) * rate * (rule.multiplier -1);
+        }
+      }
+
+      otCandidates.push(ot);
+    });
+
+    // Pick highest OT among rules
+    dayOT = Math.max(...otCandidates, 0);
+
+    const basePay = hours * rate;
+
+    const row = document.createElement('tr');
+    row.innerHTML = `<td class="border px-2 py-1">${day}</td>
+                     <td class="border px-2 py-1">${hours}</td>
+                     <td class="border px-2 py-1">$${basePay.toFixed(2)}</td>
+                     <td class="border px-2 py-1">$${dayOT.toFixed(2)}</td>`;
+    tbody.appendChild(row);
+
+    totalHours += hours;
+    totalBase += basePay;
+    totalOT += dayOT;
+  });
+
+  document.getElementById('totals').innerText =
+    `Total Hours: ${totalHours} | Base Pay: $${totalBase.toFixed(2)} | Overtime Pay: $${totalOT.toFixed(2)} | Grand Total: $${(totalBase+totalOT).toFixed(2)}`;
+}
+
+function clearSimulation() {
+  document.querySelectorAll('.day-hours').forEach(input => input.value = 0);
+  document.getElementById('employee-rate').value = 0;
+  document.querySelector('#results-table tbody').innerHTML = '';
+  document.getElementById('totals').innerText =
+    `Total Hours: 0 | Base Pay: $0.00 | Overtime Pay: $0.00 | Grand Total: $0.00`;
+}
+</script>
+</body>
+</html>
