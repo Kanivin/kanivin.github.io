@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shift & Break Rules</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+
+<div class="max-w-5xl mx-auto space-y-8">
+
+  <!-- HEADER -->
+  <div class="flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-gray-800">Shift & Break Rules</h1>
+    <button class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700">+ New Rule Set</button>
+  </div>
+
+  <!-- RULE SET PANEL -->
+  <div class="bg-white p-6 rounded-xl shadow space-y-6">
+
+    <!-- SHIFT RULES -->
+    <div>
+      <h2 class="font-semibold text-lg mb-4">Shift Rules</h2>
+      <div id="shift-container" class="space-y-4"></div>
+      <button id="add-shift" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 mt-2">+ Add Shift</button>
+    </div>
+
+    <!-- MEAL BREAK TOGGLE -->
+    <div class="flex items-center space-x-2">
+      <input type="checkbox" id="meal-toggle" class="h-4 w-4">
+      <span class="font-medium">Enable Meal Break Deduction Logic</span>
+    </div>
+
+    <!-- MEAL BREAK SECTION -->
+    <div id="meal-break-section" class="bg-white p-4 rounded-xl shadow space-y-4 hidden">
+      <h2 class="font-semibold text-lg mb-2">Meal Break Deduction Logic</h2>
+
+      <!-- Auto-Deduct Checkbox -->
+      <div class="flex items-center space-x-2 mb-2">
+        <input type="checkbox" id="auto-meal-toggle" class="h-4 w-4">
+        <span class="font-medium">Auto-Deduct Meal Breaks</span>
+      </div>
+
+      <!-- Meal Break Options (shown only if Auto-Deduct checked) -->
+      <div id="meal-options" class="space-y-4 hidden">
+        <div class="grid grid-cols-2 gap-4 mb-2">
+          <div>
+            <label>Min. Hours Worked to Qualify (Hours)</label>
+            <input type="number" class="w-full border rounded px-2 py-1" value="8">
+          </div>
+          <div>
+            <label>Time to Deduct (Minutes)</label>
+            <input type="number" class="w-full border rounded px-2 py-1" value="30">
+          </div>
+        </div>
+
+        <div class="space-y-1 mb-2">
+          <label>Deduction Placement</label>
+          <select class="w-full border rounded px-2 py-1">
+            <option>Time Specified Lunch</option>
+            <option>End Day Deduction</option>
+            <option>Dynamic Lunch (Deducted from middle)</option>
+          </select>
+        </div>
+        
+      </div>
+    </div>
+
+    <!-- PAID REST BREAK TOGGLE -->
+    <div class="flex items-center space-x-2">
+      <input type="checkbox" id="rest-toggle" class="h-4 w-4">
+      <span class="font-medium">Enable Paid Rest Break Rules</span>
+    </div>
+    <div id="rest-break-section" class="bg-white p-4 rounded-xl shadow space-y-4 hidden">
+      <h2 class="font-semibold text-lg mb-4">Paid Rest Break Rules</h2>
+      <div class="grid grid-cols-2 gap-4 mb-2">
+        <div>
+          <label>Rest Break Duration (Minutes)</label>
+          <input type="number" class="w-full border rounded px-2 py-1" value="15">
+        </div>
+        <div>
+          <label>Frequency (For every X hours worked)</label>
+          <input type="number" class="w-full border rounded px-2 py-1" value="4">
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTION BUTTONS -->
+    <div class="flex space-x-4 mt-4">
+      <button class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700">Save Rule Set</button>
+      <button class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancel</button>
+      <button class="px-4 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700">Delete Rule Set</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let shiftCount = 1;
+const container = document.getElementById('shift-container');
+
+// Create shift card
+function createShiftCard() {
+  const shiftDiv = document.createElement('div');
+  shiftDiv.className = 'shift-card border rounded p-4 space-y-2 bg-gray-50 shadow';
+
+  shiftDiv.innerHTML = `
+    <div class="flex items-center justify-between">
+      <input type="text" class="font-medium border-b border-gray-300 px-1 py-0.5 w-48" value="Shift ${shiftCount}">
+      <button class="text-blue-600 hover:underline delete-shift">Delete Shift ×</button>
+    </div>
+
+    <!-- Flexible Day Selection -->
+    <div class="flex flex-wrap gap-2 mb-2">
+      <span class="font-medium">Apply To:</span>
+      <label class="flex items-center space-x-1"><input type="checkbox" class="day-checkbox" value="All Days" checked> <span>All Days</span></label>
+      <label class="flex items-center space-x-1"><input type="checkbox" class="day-checkbox" value="Monday"> <span>Mon</span></label>
+      <label class="flex items-center space-x-1"><input type="checkbox" class="day-checkbox" value="Tuesday"> <span>Tue</span></label>
+      <label class="flex items-center space-x-1"><input type="checkbox" class="day-checkbox" value="Wednesday"> <span>Wed</span></label>
+      <label class="flex items-center space-x-1"><input type="checkbox" class="day-checkbox" value="Thursday"> <span>Thu</span></label>
+      <label class="flex items-center space-x-1"><input type="checkbox" class="day-checkbox" value="Friday"> <span>Fri</span></label>
+      <label class="flex items-center space-x-1"><input type="checkbox" class="day-checkbox" value="Saturday"> <span>Sat</span></label>
+      <label class="flex items-center space-x-1"><input type="checkbox" class="day-checkbox" value="Sunday"> <span>Sun</span></label>
+    </div>
+
+    <!-- Time Inputs with Enforce -->
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label>Start Time</label>
+        <div class="flex items-center space-x-2">
+          <input type="time" class="w-full border rounded px-2 py-1" value="09:00">
+          <label class="flex items-center space-x-1"><input type="checkbox" class="enforce-start"> <span>Enforce</span></label>
+        </div>
+      </div>
+      <div>
+        <label>End Time</label>
+        <div class="flex items-center space-x-2">
+          <input type="time" class="w-full border rounded px-2 py-1" value="18:00">
+          <label class="flex items-center space-x-1"><input type="checkbox" class="enforce-end"> <span>Enforce</span></label>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label>Float Before (min.)</label>
+          <input type="number" class="w-full border rounded px-2 py-1" value="5">
+        </div>
+        <div>
+          <label>Float After (min.)</label>
+          <input type="number" class="w-full border rounded px-2 py-1" value="5">
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Delete shift
+  shiftDiv.querySelector('.delete-shift').addEventListener('click', () => shiftDiv.remove());
+
+  // Day selection logic
+  const dayCheckboxes = shiftDiv.querySelectorAll('.day-checkbox');
+  dayCheckboxes.forEach(cb => {
+    cb.addEventListener('change', () => {
+      if(cb.value === "All Days" && cb.checked){
+        dayCheckboxes.forEach(d => { if(d.value !== "All Days") d.checked = false; });
+      }
+      if(cb.value !== "All Days" && cb.checked){
+        shiftDiv.querySelector('.day-checkbox[value="All Days"]').checked = false;
+      }
+    });
+  });
+
+  return shiftDiv;
+}
+
+// Add initial shift
+container.appendChild(createShiftCard());
+
+// Add shift button
+document.getElementById('add-shift').addEventListener('click', () => {
+  const allDaysSelected = [...document.querySelectorAll('.shift-card')].some(card => 
+    card.querySelector('.day-checkbox[value="All Days"]').checked
+  );
+  if(allDaysSelected) {
+    alert("Cannot add a new shift when 'All Days' is selected in any existing shift.");
+    return;
+  }
+  shiftCount++;
+  container.appendChild(createShiftCard());
+});
+
+// Toggle Meal Break Section
+document.getElementById('meal-toggle').addEventListener('change', (e) => {
+  document.getElementById('meal-break-section').classList.toggle('hidden', !e.target.checked);
+});
+
+// Toggle Meal Options (Auto-Deduct)
+document.getElementById('auto-meal-toggle').addEventListener('change', (e) => {
+  document.getElementById('meal-options').classList.toggle('hidden', !e.target.checked);
+});
+
+// Toggle Paid Rest Break Section
+document.getElementById('rest-toggle').addEventListener('change', (e) => {
+  document.getElementById('rest-break-section').classList.toggle('hidden', !e.target.checked);
+});
+</script>
+
+</body>
+</html>
