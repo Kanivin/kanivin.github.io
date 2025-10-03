@@ -10,7 +10,7 @@
 
   <!-- HEADER -->
   <div class="flex justify-between items-center">
-    <h1 class="text-2xl font-bold text-gray-800">Overtime Simulator</h1>
+    <h1 class="text-2xl font-bold text-gray-800">Overtime & Double Rule </h1>
   </div>
 
   <!-- RULE BUILDER -->
@@ -105,13 +105,14 @@
     <table class="w-full border text-sm" id="results-table">
       <thead class="bg-gray-100">
         <tr>
-          <th>Day</th><th>Hours</th><th>Base Pay</th><th>Time & Half OT</th><th>Double Time OT</th><th>Total OT</th>
+          <th>Day</th><th>Hours</th><th>Base Pay</th><th>Time & Half OT</th>
+          <th>Double Time OT</th><th>Total OT</th>
         </tr>
       </thead>
       <tbody></tbody>
       <tfoot class="bg-gray-50 font-semibold">
         <tr>
-          <td colspan="6" class="border px-2 py-2 text-right" id="totals">
+          <td colspan="7" class="border px-2 py-2 text-right" id="totals">
             Total Hours: 0 | Base Pay: $0.00 | Time & Half OT: $0.00 | Double Time OT: $0.00 | Grand Total: $0.00
           </td>
         </tr>
@@ -163,48 +164,86 @@ function runSimulation() {
   hoursInputs.forEach((input) => {
     const hours = parseFloat(input.value) || 0;
     const day = input.dataset.day;
-    let thOT = 0, dtOT = 0;
 
-    consecutive = hours > 0 ? consecutive + 1 : 0;
+    let thOT = 0, dtOT = 0;
+    let appliedTHRules = [], appliedDTRules = [], appliedRules = [];
+
+    // Update consecutive
+    if(hours > 0) consecutive += 1;
+    else consecutive = 0;
+
     weeklyHours += hours;
 
     rules.forEach(rule => {
       if(hours === 0) return;
 
-      // 1️⃣ Apply "All hours on Sat/Sun/Holiday" first
+      // Sat/Sun/Holiday
       if((day==='Sat' && rule.sat) || (day==='Sun' && rule.sun) || (day==='Holiday' && rule.holiday)) {
-        if(rule.name==='Time & Half') thOT += hours * rate * (rule.multiplier -1);
-        if(rule.name==='Double Time') dtOT += hours * rate * (rule.multiplier -1);
-        return; // skip daily/weekly/consecutive since all hours already counted
+        if(rule.name==='Time & Half') appliedTHRules.push('Weekend/Holiday');
+        if(rule.name==='Double Time') appliedDTRules.push('Weekend/Holiday');
       }
 
-      // 2️⃣ Daily OT
-      if(rule.dailyCheck && hours > rule.daily) {
-        let dailyHours = hours - rule.daily;
-        if(rule.name==='Double Time') dtOT += dailyHours * rate * (rule.multiplier -1);
-        if(rule.name==='Time & Half') {
-          const dtRule = rules.find(r=>r.name==='Double Time');
-          const dtHours = dtRule.dailyCheck ? Math.max(hours - dtRule.daily,0) : 0;
-          const thHours = Math.max(dailyHours - dtHours,0);
-          thOT += thHours * rate * (rule.multiplier -1);
+    // Daily OT
+      if(rule.dailyCheck && hours > rule.daily){
+          let dailyHours = hours - rule.daily;
+
+          if(rule.name === 'Double Time'){
+              let ot = dailyHours * rate * (rule.multiplier -1);
+              dtOT += ot;
+              appliedDTRules.push(`Daily after ${rule.daily}h`);
+          }
+
+          if(rule.name === 'Time & Half'){
+              // subtract DT hours already counted
+              let dtRule = rules.find(r => r.name === 'Double Time');
+              let dtDailyHours = 0;
+              if(dtRule && dtRule.dailyCheck){
+                  dtDailyHours = Math.max(hours - dtRule.daily, 0);
+              }
+              let thHours = Math.max(dailyHours - dtDailyHours, 0);
+              let ot = thHours * rate * (rule.multiplier -1);
+              if(ot > 0){
+                  thOT += ot;
+                  appliedTHRules.push(`Daily after ${rule.daily}h`);
+              }
+          }
+      }
+
+      // Consecutive Day OT
+      if(rule.consecutiveCheck) {
+        if(rule.name==='Time & Half' && consecutive === rule.consecutiveDay) {
+          let otHours = Math.max(hours - rule.consecutiveHours,0);
+          if(otHours > 0) {
+            thOT += otHours * rate * (rule.multiplier -1);
+            appliedTHRules.push(`Consecutive ${rule.consecutiveDay}th day after ${rule.consecutiveHours}h`);
+          }
+        }
+        if(rule.name==='Double Time' && consecutive === rule.consecutiveDay) {
+          let otHours = Math.max(hours - rule.consecutiveHours,0);
+          if(otHours > 0) {
+            dtOT += otHours * rate * (rule.multiplier -1);
+            appliedDTRules.push(`Consecutive ${rule.consecutiveDay}th day after ${rule.consecutiveHours}h`);
+          }
         }
       }
 
-      // 3️⃣ Weekly OT
+      // Weekly OT (optional, can be enhanced)
       if(rule.weeklyCheck && weeklyHours > rule.weekly) {
         let otHours = Math.min(weeklyHours - rule.weekly, hours);
-        if(rule.name==='Double Time') dtOT += otHours * rate * (rule.multiplier -1);
-        if(rule.name==='Time & Half') thOT += otHours * rate * (rule.multiplier -1);
+        if(rule.name==='Time & Half' && otHours > 0) {
+          thOT += otHours * rate * (rule.multiplier -1);
+          appliedTHRules.push(`Weekly after ${rule.weekly}h`);
+        }
+        if(rule.name==='Double Time' && otHours > 0) {
+          dtOT += otHours * rate * (rule.multiplier -1);
+          appliedDTRules.push(`Weekly after ${rule.weekly}h`);
+        }
       }
-
-      // 4️⃣ Consecutive Day OT
-      if(rule.consecutiveCheck && consecutive === rule.consecutiveDay && hours > rule.consecutiveHours) {
-        let otHours = hours - rule.consecutiveHours;
-        if(rule.name==='Double Time') dtOT += otHours * rate * (rule.multiplier -1);
-        if(rule.name==='Time & Half') thOT += otHours * rate * (rule.multiplier -1);
-      }
-
     });
+
+    // Combine applied rules
+    if(thOT>0) appliedRules.push(`Time & Half: ${appliedTHRules.join(', ')}`);
+    if(dtOT>0) appliedRules.push(`Double Time: ${appliedDTRules.join(', ')}`);
 
     const basePay = hours * rate;
     const row = document.createElement('tr');
@@ -213,7 +252,8 @@ function runSimulation() {
                      <td class="border px-2 py-1">$${basePay.toFixed(2)}</td>
                      <td class="border px-2 py-1">$${thOT.toFixed(2)}</td>
                      <td class="border px-2 py-1">$${dtOT.toFixed(2)}</td>
-                     <td class="border px-2 py-1">$${(thOT+dtOT).toFixed(2)}</td>`;
+                     <td class="border px-2 py-1">$${(thOT+dtOT).toFixed(2)}</td>
+                     `;
     tbody.appendChild(row);
 
     totalHours += hours;
