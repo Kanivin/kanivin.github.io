@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Overtime & Double Time Rules</title>
+<title>Overtime & Double Time Simulator</title>
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 p-8">
@@ -10,7 +10,7 @@
 
   <!-- HEADER -->
   <div class="flex justify-between items-center">
-    <h1 class="text-2xl font-bold text-gray-800">Overtime Rules</h1>
+    <h1 class="text-2xl font-bold text-gray-800">Overtime Simulator</h1>
   </div>
 
   <!-- RULE BUILDER -->
@@ -38,7 +38,7 @@
       </div>
       <div>
         All hours on:
-        <label><input type="checkbox" id="dt-sat" > Sat</label>
+        <label><input type="checkbox" id="dt-sat"> Sat</label>
         <label><input type="checkbox" id="dt-sun" checked> Sun</label>
         <label><input type="checkbox" id="dt-holiday" checked> Holiday</label>
       </div>
@@ -67,7 +67,7 @@
       <div>
         All hours on:
         <label><input type="checkbox" id="th-sat" checked> Sat</label>
-        <label><input type="checkbox" id="th-sun" > Sun</label>
+        <label><input type="checkbox" id="th-sun"> Sun</label>
         <label><input type="checkbox" id="th-holiday"> Holiday</label>
       </div>
     </div>
@@ -81,17 +81,17 @@
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
       <div>
         <label>Employee Rate (base/hour)</label>
-        <input type="number" value="20" step="0.01" id="employee-rate" class="w-full border px-2 py-1 mt-1">
+        <input type="number" value="10" step="0.01" id="employee-rate" class="w-full border px-2 py-1 mt-1">
       </div>
       <div class="col-span-3">
         <label>Enter Hours per Day (Mon-Sun)</label>
         <div class="flex space-x-2 mt-1">
-          <input type="number" value="8" class="w-14 border text-center day-hours" data-day="Mon">
+          <input type="number" value="13" class="w-14 border text-center day-hours" data-day="Mon">
           <input type="number" value="8" class="w-14 border text-center day-hours" data-day="Tue">
           <input type="number" value="8" class="w-14 border text-center day-hours" data-day="Wed">
           <input type="number" value="8" class="w-14 border text-center day-hours" data-day="Thu">
           <input type="number" value="8" class="w-14 border text-center day-hours" data-day="Fri">
-          <input type="number" value="4" class="w-14 border text-center day-hours" data-day="Sat">
+          <input type="number" value="0" class="w-14 border text-center day-hours" data-day="Sat">
           <input type="number" value="0" class="w-14 border text-center day-hours" data-day="Sun">
         </div>
       </div>
@@ -104,13 +104,13 @@
 
     <table class="w-full border text-sm" id="results-table">
       <thead class="bg-gray-100">
-        <tr><th>Day</th><th>Hours</th><th>Base Pay</th><th>Overtime Pay</th></tr>
+        <tr><th>Day</th><th>Hours</th><th>Base Pay</th><th>Time & Half OT</th><th>Double Time OT</th><th>Total OT</th></tr>
       </thead>
       <tbody></tbody>
       <tfoot class="bg-gray-50 font-semibold">
         <tr>
-          <td colspan="4" class="border px-2 py-2 text-right" id="totals">
-            Total Hours: 0 | Base Pay: $0.00 | Overtime Pay: $0.00 | Grand Total: $0.00
+          <td colspan="6" class="border px-2 py-2 text-right" id="totals">
+            Total Hours: 0 | Base Pay: $0.00 | Time & Half OT: $0.00 | Double Time OT: $0.00 | Grand Total: $0.00
           </td>
         </tr>
       </tfoot>
@@ -125,7 +125,6 @@ function runSimulation() {
   const tbody = document.querySelector('#results-table tbody');
   tbody.innerHTML = '';
 
-  // Load rules
   const rules = [
     {
       name: 'Double Time',
@@ -157,65 +156,79 @@ function runSimulation() {
     }
   ];
 
-  let totalHours = 0, totalBase = 0, totalOT = 0, weeklyHours = 0, consecutive = 0;
+  let totalHours = 0, totalBase = 0, totalTH = 0, totalDT = 0, weeklyHours = 0, consecutive = 0;
 
-  hoursInputs.forEach(input => {
+  hoursInputs.forEach((input, index) => {
     const hours = parseFloat(input.value) || 0;
-    let dayOT = 0;
     const day = input.dataset.day;
+    let thOT = 0, dtOT = 0;
 
     consecutive = hours > 0 ? consecutive + 1 : 0;
     weeklyHours += hours;
 
-    // Compute OT for all rules
-    const otCandidates = [];
-
+    // Split OT logic: Time & Half first, then Double Time
     rules.forEach(rule => {
       if(hours === 0) return;
 
-      let applyAll = (day==='Sat' && rule.sat) || (day==='Sun' && rule.sun);
-      let ot = 0;
-
-      // All hours on
-      if(applyAll) {
-        ot = hours * rate * (rule.multiplier - 1);
-      }
-      else {
-        // Daily
-        if(rule.dailyCheck && hours > rule.daily) ot += (hours - rule.daily) * rate * (rule.multiplier -1);
-        // Weekly
-        if(rule.weeklyCheck && weeklyHours > rule.weekly) {
-          let otHours = Math.min(weeklyHours - rule.weekly, hours);
-          if(otHours>0) ot += otHours * rate * (rule.multiplier -1);
-        }
-        // Consecutive
-        if(rule.consecutiveCheck && consecutive === rule.consecutiveDay && hours > rule.consecutiveHours) {
-          ot += (hours - rule.consecutiveHours) * rate * (rule.multiplier -1);
-        }
+      // Apply all hours on Sat/Sun/Holiday
+      if((day==='Sat' && rule.sat) || (day==='Sun' && rule.sun)) {
+        if(rule.name==='Time & Half') thOT += hours * rate * (rule.multiplier - 1);
+        if(rule.name==='Double Time') dtOT += hours * rate * (rule.multiplier - 1);
+        return;
       }
 
-      otCandidates.push(ot);
+      // Daily OT
+      if(rule.dailyCheck) {
+        let dailyHours = Math.max(hours - rule.daily, 0);
+        if(rule.name==='Time & Half' && dailyHours > 0) {
+          // Deduct hours that are above Double Time threshold
+          const dtRule = rules.find(r => r.name==='Double Time');
+          const dtHours = dtRule.dailyCheck ? Math.max(hours - dtRule.daily, 0) : 0;
+          const thHours = Math.max(dailyHours - dtHours, 0);
+          thOT += thHours * rate * (rule.multiplier -1);
+        }
+        if(rule.name==='Double Time' && dailyHours > 0) {
+          dtOT += dailyHours * rate * (rule.multiplier -1);
+        }
+      }
+
+      // Weekly OT
+      if(rule.weeklyCheck && weeklyHours > rule.weekly) {
+        const otHours = Math.min(weeklyHours - rule.weekly, hours);
+        if(otHours > 0) {
+          if(rule.name==='Time & Half') thOT += otHours * rate * (rule.multiplier -1);
+          if(rule.name==='Double Time') dtOT += otHours * rate * (rule.multiplier -1);
+        }
+      }
+
+      // Consecutive OT
+      if(rule.consecutiveCheck && consecutive === rule.consecutiveDay && hours > rule.consecutiveHours) {
+        const otHours = hours - rule.consecutiveHours;
+        if(rule.name==='Time & Half') thOT += otHours * rate * (rule.multiplier -1);
+        if(rule.name==='Double Time') dtOT += otHours * rate * (rule.multiplier -1);
+      }
     });
 
-    // Pick highest OT among rules
-    dayOT = Math.max(...otCandidates, 0);
-
     const basePay = hours * rate;
+    const totalOT = thOT + dtOT;
 
     const row = document.createElement('tr');
     row.innerHTML = `<td class="border px-2 py-1">${day}</td>
                      <td class="border px-2 py-1">${hours}</td>
                      <td class="border px-2 py-1">$${basePay.toFixed(2)}</td>
-                     <td class="border px-2 py-1">$${dayOT.toFixed(2)}</td>`;
+                     <td class="border px-2 py-1">$${thOT.toFixed(2)}</td>
+                     <td class="border px-2 py-1">$${dtOT.toFixed(2)}</td>
+                     <td class="border px-2 py-1">$${totalOT.toFixed(2)}</td>`;
     tbody.appendChild(row);
 
     totalHours += hours;
     totalBase += basePay;
-    totalOT += dayOT;
+    totalTH += thOT;
+    totalDT += dtOT;
   });
 
   document.getElementById('totals').innerText =
-    `Total Hours: ${totalHours} | Base Pay: $${totalBase.toFixed(2)} | Overtime Pay: $${totalOT.toFixed(2)} | Grand Total: $${(totalBase+totalOT).toFixed(2)}`;
+    `Total Hours: ${totalHours} | Base Pay: $${totalBase.toFixed(2)} | Time & Half OT: $${totalTH.toFixed(2)} | Double Time OT: $${totalDT.toFixed(2)} | Grand Total: $${(totalBase+totalTH+totalDT).toFixed(2)}`;
 }
 
 function clearSimulation() {
@@ -223,7 +236,7 @@ function clearSimulation() {
   document.getElementById('employee-rate').value = 0;
   document.querySelector('#results-table tbody').innerHTML = '';
   document.getElementById('totals').innerText =
-    `Total Hours: 0 | Base Pay: $0.00 | Overtime Pay: $0.00 | Grand Total: $0.00`;
+    `Total Hours: 0 | Base Pay: $0.00 | Time & Half OT: $0.00 | Double Time OT: $0.00 | Grand Total: $0.00`;
 }
 </script>
 </body>
