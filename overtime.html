@@ -8,36 +8,23 @@
 <body class="bg-gray-50 p-8">
 <div class="max-w-7xl mx-auto space-y-8">
 
-  <!-- HEADER -->
   <div class="flex justify-between items-center">
     <h1 class="text-2xl font-bold text-gray-800">Overtime & Double Rule </h1>
   </div>
 
   <!-- RULE BUILDER -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
     <!-- Double Time -->
     <div class="bg-white p-6 rounded-xl shadow space-y-4">
       <h2 class="font-semibold text-lg">Overtime - Double Time</h2>
-      <div>
-        <label>Multiplier</label>
-        <input type="number" value="2" step="0.1" id="dt-multiplier" class="w-24 border px-2 py-1">
-      </div>
-      <div>
-        <input type="checkbox" id="dt-daily-check" checked> Daily After
-        <input type="number" value="12" id="dt-daily" class="w-24 border px-2 py-1"> hours
-      </div>
-      <div>
-        <input type="checkbox" id="dt-weekly-check"> Weekly After
-        <input type="number" value="40" id="dt-weekly" class="w-24 border px-2 py-1"> hours
-      </div>
-      <div>
-        <input type="checkbox" id="dt-consecutive-check"> Consecutive Day
+      <div><label>Multiplier</label><input type="number" value="2" step="0.1" id="dt-multiplier" class="w-24 border px-2 py-1"></div>
+      <div><input type="checkbox" id="dt-daily-check" checked> Daily After <input type="number" value="12" id="dt-daily" class="w-24 border px-2 py-1"> hours</div>
+      <div><input type="checkbox" id="dt-weekly-check"> Weekly After <input type="number" value="40" id="dt-weekly" class="w-24 border px-2 py-1"> hours</div>
+      <div><input type="checkbox" id="dt-consecutive-check"> Consecutive Day
         <select id="dt-consecutive"><option value="7">7th</option><option value="6">6th</option></select>
         After <input type="number" value="8" id="dt-consecutive-hours" class="w-24 border px-2 py-1"> hours
       </div>
-      <div>
-        All hours on:
+      <div>All hours on:
         <label><input type="checkbox" id="dt-sat"> Sat</label>
         <label><input type="checkbox" id="dt-sun" checked> Sun</label>
         <label><input type="checkbox" id="dt-holiday" checked> Holiday</label>
@@ -47,31 +34,19 @@
     <!-- Time & Half -->
     <div class="bg-white p-6 rounded-xl shadow space-y-4">
       <h2 class="font-semibold text-lg">Overtime - Time & Half</h2>
-      <div>
-        <label>Multiplier</label>
-        <input type="number" value="1.5" step="0.1" id="th-multiplier" class="w-24 border px-2 py-1">
-      </div>
-      <div>
-        <input type="checkbox" id="th-daily-check" checked> Daily After
-        <input type="number" value="8" id="th-daily" class="w-24 border px-2 py-1"> hours
-      </div>
-      <div>
-        <input type="checkbox" id="th-weekly-check"> Weekly After
-        <input type="number" value="40" id="th-weekly" class="w-24 border px-2 py-1"> hours
-      </div>
-      <div>
-        <input type="checkbox" id="th-consecutive-check"> Consecutive Day
+      <div><label>Multiplier</label><input type="number" value="1.5" step="0.1" id="th-multiplier" class="w-24 border px-2 py-1"></div>
+      <div><input type="checkbox" id="th-daily-check" checked> Daily After <input type="number" value="8" id="th-daily" class="w-24 border px-2 py-1"> hours</div>
+      <div><input type="checkbox" id="th-weekly-check"> Weekly After <input type="number" value="40" id="th-weekly" class="w-24 border px-2 py-1"> hours</div>
+      <div><input type="checkbox" id="th-consecutive-check"> Consecutive Day
         <select id="th-consecutive"><option value="6">6th</option><option value="7">7th</option></select>
         After <input type="number" value="8" id="th-consecutive-hours" class="w-24 border px-2 py-1"> hours
       </div>
-      <div>
-        All hours on:
+      <div>All hours on:
         <label><input type="checkbox" id="th-sat" checked> Sat</label>
         <label><input type="checkbox" id="th-sun"> Sun</label>
         <label><input type="checkbox" id="th-holiday"> Holiday</label>
       </div>
     </div>
-
   </div>
 
   <!-- Simulation -->
@@ -106,7 +81,7 @@
       <thead class="bg-gray-100">
         <tr>
           <th>Day</th><th>Hours</th><th>Base Pay</th><th>Time & Half OT</th>
-          <th>Double Time OT</th><th>Total OT</th>
+          <th>Double Time OT</th><th>Total OT</th><th>Applied Rules</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -177,13 +152,15 @@ function runSimulation() {
     rules.forEach(rule => {
       if(hours === 0) return;
 
-      // Sat/Sun/Holiday
-      if((day==='Sat' && rule.sat) || (day==='Sun' && rule.sun) || (day==='Holiday' && rule.holiday)) {
-        if(rule.name==='Time & Half') appliedTHRules.push('Weekend/Holiday');
-        if(rule.name==='Double Time') appliedDTRules.push('Weekend/Holiday');
+      // 1️⃣ Weekend/Holiday OT
+      let isWeekend = (day==='Sat' && rule.sat) || (day==='Sun' && rule.sun) || (day==='Holiday' && rule.holiday);
+      if(isWeekend){
+        let ot = hours * rate * (rule.multiplier-1);
+        if(rule.name==='Time & Half'){ thOT += ot; appliedTHRules.push('Weekend/Holiday'); }
+        if(rule.name==='Double Time'){ dtOT += ot; appliedDTRules.push('Weekend/Holiday'); }
       }
 
-    // Daily OT
+      // 2️⃣ Daily OT
       if(rule.dailyCheck && hours > rule.daily){
           let dailyHours = hours - rule.daily;
 
@@ -195,12 +172,12 @@ function runSimulation() {
 
           if(rule.name === 'Time & Half'){
               // subtract DT hours already counted
-              let dtRule = rules.find(r => r.name === 'Double Time');
-              let dtDailyHours = 0;
+              let dtRule = rules.find(r => r.name==='Double Time');
+              let dtHours = 0;
               if(dtRule && dtRule.dailyCheck){
-                  dtDailyHours = Math.max(hours - dtRule.daily, 0);
+                  dtHours = Math.max(hours - dtRule.daily, 0);
               }
-              let thHours = Math.max(dailyHours - dtDailyHours, 0);
+              let thHours = Math.max(dailyHours - dtHours, 0);
               let ot = thHours * rate * (rule.multiplier -1);
               if(ot > 0){
                   thOT += ot;
@@ -209,36 +186,23 @@ function runSimulation() {
           }
       }
 
-      // Consecutive Day OT
-      if(rule.consecutiveCheck) {
-        if(rule.name==='Time & Half' && consecutive === rule.consecutiveDay) {
+      // 3️⃣ Consecutive Day OT
+      if(rule.consecutiveCheck && consecutive === rule.consecutiveDay){
           let otHours = Math.max(hours - rule.consecutiveHours,0);
-          if(otHours > 0) {
-            thOT += otHours * rate * (rule.multiplier -1);
-            appliedTHRules.push(`Consecutive ${rule.consecutiveDay}th day after ${rule.consecutiveHours}h`);
+          let ot = otHours * rate * (rule.multiplier -1);
+          if(ot > 0){
+            if(rule.name==='Time & Half'){ thOT += ot; appliedTHRules.push(`Consecutive ${rule.consecutiveDay}th day`); }
+            if(rule.name==='Double Time'){ dtOT += ot; appliedDTRules.push(`Consecutive ${rule.consecutiveDay}th day`); }
           }
-        }
-        if(rule.name==='Double Time' && consecutive === rule.consecutiveDay) {
-          let otHours = Math.max(hours - rule.consecutiveHours,0);
-          if(otHours > 0) {
-            dtOT += otHours * rate * (rule.multiplier -1);
-            appliedDTRules.push(`Consecutive ${rule.consecutiveDay}th day after ${rule.consecutiveHours}h`);
-          }
-        }
       }
 
-      // Weekly OT (optional, can be enhanced)
-      if(rule.weeklyCheck && weeklyHours > rule.weekly) {
+      // 4️⃣ Weekly OT
+      if(rule.weeklyCheck && weeklyHours > rule.weekly){
         let otHours = Math.min(weeklyHours - rule.weekly, hours);
-        if(rule.name==='Time & Half' && otHours > 0) {
-          thOT += otHours * rate * (rule.multiplier -1);
-          appliedTHRules.push(`Weekly after ${rule.weekly}h`);
-        }
-        if(rule.name==='Double Time' && otHours > 0) {
-          dtOT += otHours * rate * (rule.multiplier -1);
-          appliedDTRules.push(`Weekly after ${rule.weekly}h`);
-        }
+        if(rule.name==='Time & Half' && otHours > 0) { thOT += otHours * rate * (rule.multiplier-1); appliedTHRules.push(`Weekly after ${rule.weekly}h`);}
+        if(rule.name==='Double Time' && otHours > 0) { dtOT += otHours * rate * (rule.multiplier-1); appliedDTRules.push(`Weekly after ${rule.weekly}h`);}
       }
+
     });
 
     // Combine applied rules
@@ -253,7 +217,7 @@ function runSimulation() {
                      <td class="border px-2 py-1">$${thOT.toFixed(2)}</td>
                      <td class="border px-2 py-1">$${dtOT.toFixed(2)}</td>
                      <td class="border px-2 py-1">$${(thOT+dtOT).toFixed(2)}</td>
-                     `;
+                     <td class="border px-2 py-1" title="${appliedRules.join('; ')}">${appliedRules.join('; ')}</td>`;
     tbody.appendChild(row);
 
     totalHours += hours;
